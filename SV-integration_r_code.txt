@@ -1,0 +1,82 @@
+expression<-read.table("D:\\github\\expression.txt")
+copy<-read.table("D:\\github\\copy.txt")
+SV<-read.table("D:\\github\\SV_distance.txt")
+cancer_type<-read.table("D:\\github\\cancer_type.txt")
+covariates<-read.table("D:\\github\\covariates.txt")
+expression<-as.matrix(expression)
+copy<-as.matrix(copy)
+SV<-as.matrix(SV)
+cancer_type<-as.matrix(cancer_type)
+covariates<-as.matrix(covariates)
+
+
+
+SV_integration<-function(expression, copy, SV, cancer_type) {
+
+
+cat("starting time is",date(),"\n")
+J <- dim(expression)[2]
+I <- dim(expression)[1]
+
+
+beta<- array(0,c(I,12))
+
+for(i in 1:I) {
+
+beta[i,1]<-1
+beta[i,2]<-1
+beta[i,3]<-1
+beta[i,4]<-1
+beta[i,5]<-1
+beta[i,6]<-1
+beta[i,7]<-1
+beta[i,8]<-1
+beta[i,9]<-1
+beta[i,10]<-1
+beta[i,11]<-1
+beta[i,12]<-1
+
+if(sd(SV[i,])>0.001) {
+
+#num SV
+z1<-lm(expression[i,]~SV[i,]+copy[i,]+as.factor(cancer_type[1,])+covariates[1,])
+beta[i,1]<-summary(z1)$coefficients[2,3]
+beta[i,2]<-summary(z1)$coefficients[2,4]
+
+#low-pass
+z<-lm(expression[i,]~SV[i,]+copy[i,]+as.factor(cancer_type[1,])+covariates[2,])
+beta[i,3]<-summary(z)$coefficients[2,3]
+beta[i,4]<-summary(z)$coefficients[2,4]
+
+#age
+z<-lm(expression[i,]~SV[i,]+copy[i,]+as.factor(cancer_type[1,])+covariates[3,])
+beta[i,5]<-summary(z)$coefficients[2,3]
+beta[i,6]<-summary(z)$coefficients[2,4]
+
+#purity
+z<-lm(expression[i,]~SV[i,]+copy[i,]+as.factor(cancer_type[1,])+covariates[4,])
+beta[i,7]<-summary(z)$coefficients[2,3]
+beta[i,8]<-summary(z)$coefficients[2,4]
+
+#ploidy
+z<-lm(expression[i,]~SV[i,]+copy[i,]+as.factor(cancer_type[1,])+covariates[5,])
+beta[i,9]<-summary(z)$coefficients[2,3]
+beta[i,10]<-summary(z)$coefficients[2,4]
+
+#num SV+low pass
+z1<-lm(expression[i,]~SV[i,]+copy[i,]+as.factor(cancer_type[1,])+covariates[1,]+covariates[2,])
+beta[i,11]<-summary(z1)$coefficients[2,3]
+beta[i,12]<-summary(z1)$coefficients[2,4]
+
+}
+
+  cat(i,"\n")
+} # end of I
+
+cat("ending time is",date(),"\n")
+
+return(beta)
+}
+
+beta<-SV_integration(expression, copy, SV, cancer_type)
+write.table(beta, file = "D:\\github\\lm_test_results_SV_dist_w_covar.txt")
